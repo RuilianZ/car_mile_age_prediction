@@ -16,11 +16,11 @@ The dataset contains 392 observations. The response variable is mpg cat, which i
 •	origin: Origin of car (1. American, 2. European, 3. Japanese)  
 
 
-## Data partition
+## Data Partition
 Split the dataset into two parts: training data (70%) and test data (30%).  
 
 
-## Modle building and analysis
+## Modle Building and Analysis
 (a)	Produce some graphical or numerical summaries of the data.  
 (b)	Perform a logistic regression using the training data. Do any of the predictors appear to be statistically significant? If so, which ones? Compute the confusion matrix and overall fraction of correct predictions using the test data. Briefly explain what the confusion matrix is telling you.  
 (c)	Train a multivariate adaptive regression spline (MARS) model using the training data.  
