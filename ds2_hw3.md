@@ -238,3 +238,149 @@ building.
 Also, `cylinders8` is highly correlated with above numeric predictors.
 
 ## Logistic Regression
+
+``` r
+set.seed(1115)
+
+# check for the response variable level
+contrasts(auto$mpg_cat)
+```
+
+    ##      high
+    ## low     0
+    ## high    1
+
+``` r
+# fit glm model
+glm_fit = glm(
+  mpg_cat ~ .,
+  data = auto,
+  subset = index_train,
+  family = binomial(link = "logit"))
+```
+
+    ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+``` r
+summary(glm_fit)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = mpg_cat ~ ., family = binomial(link = "logit"), 
+    ##     data = auto, subset = index_train)
+    ## 
+    ## Deviance Residuals: 
+    ##    Min      1Q  Median      3Q     Max  
+    ##  -2.30    0.00    0.00    0.00    1.67  
+    ## 
+    ## Coefficients:
+    ##                  Estimate Std. Error z value Pr(>|z|)  
+    ## (Intercept)     2.423e+01  7.972e+04   0.000   0.9998  
+    ## cylinders4      2.317e+01  7.946e+04   0.000   0.9998  
+    ## cylinders5      2.519e+00  7.955e+04   0.000   1.0000  
+    ## cylinders6     -2.501e+01  7.966e+04   0.000   0.9997  
+    ## cylinders8     -2.000e+01  7.966e+04   0.000   0.9998  
+    ## year71         -1.921e+01  6.385e+03  -0.003   0.9976  
+    ## year72         -1.931e+01  6.385e+03  -0.003   0.9976  
+    ## year73         -2.263e+01  6.385e+03  -0.004   0.9972  
+    ## year74          9.045e+00  5.417e+04   0.000   0.9999  
+    ## year75          8.786e+00  1.614e+04   0.001   0.9996  
+    ## year76         -1.718e+01  6.385e+03  -0.003   0.9979  
+    ## year77          8.554e+00  5.831e+04   0.000   0.9999  
+    ## year78         -1.662e+01  6.385e+03  -0.003   0.9979  
+    ## year79          3.156e+01  5.827e+03   0.005   0.9957  
+    ## year80          2.158e+01  6.248e+03   0.003   0.9972  
+    ## year81          3.523e+01  5.827e+03   0.006   0.9952  
+    ## year82          3.181e+01  5.827e+03   0.005   0.9956  
+    ## originEuropean  5.892e+00  3.039e+00   1.939   0.0525 .
+    ## originJapanese  1.174e+00  1.748e+00   0.672   0.5018  
+    ## displacement    3.201e-02  3.989e-02   0.802   0.4223  
+    ## horsepower      1.243e-02  6.743e-02   0.184   0.8537  
+    ## weight         -1.226e-02  4.788e-03  -2.561   0.0104 *
+    ## acceleration   -2.713e-01  3.883e-01  -0.699   0.4848  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 382.617  on 275  degrees of freedom
+    ## Residual deviance:  29.956  on 253  degrees of freedom
+    ## AIC: 75.956
+    ## 
+    ## Number of Fisher Scoring iterations: 22
+
+From the summary above, we can see that for the logistic regression
+model, `weight` and `originEuropean` are **statistically significant
+predictors** under 0.05 significance level, and `weight` is significant
+under 0.01 significance level.
+
+``` r
+# test model performance
+test_pred_prob = predict(
+  glm_fit,
+  newdata = test,
+  type = "response") # get predicted probabilities
+
+test_pred = rep("low", length(test_pred_prob))
+
+# use a simple classifier with a cut-off of 0.5
+test_pred[test_pred_prob>0.5] = "high"
+
+confusionMatrix(data = as.factor(test_pred),
+                reference = test$mpg_cat,
+                positive = "high")
+```
+
+    ## Warning in confusionMatrix.default(data = as.factor(test_pred), reference
+    ## = test$mpg_cat, : Levels are not in the same order for reference and data.
+    ## Refactoring data to match.
+
+    ## Confusion Matrix and Statistics
+    ## 
+    ##           Reference
+    ## Prediction low high
+    ##       low   52    8
+    ##       high   6   50
+    ##                                           
+    ##                Accuracy : 0.8793          
+    ##                  95% CI : (0.8058, 0.9324)
+    ##     No Information Rate : 0.5             
+    ##     P-Value [Acc > NIR] : <2e-16          
+    ##                                           
+    ##                   Kappa : 0.7586          
+    ##                                           
+    ##  Mcnemar's Test P-Value : 0.7893          
+    ##                                           
+    ##             Sensitivity : 0.8621          
+    ##             Specificity : 0.8966          
+    ##          Pos Pred Value : 0.8929          
+    ##          Neg Pred Value : 0.8667          
+    ##              Prevalence : 0.5000          
+    ##          Detection Rate : 0.4310          
+    ##    Detection Prevalence : 0.4828          
+    ##       Balanced Accuracy : 0.8793          
+    ##                                           
+    ##        'Positive' Class : high            
+    ## 
+
+-   As the confusion matrix shows above, there are 52 true low MPG
+    category and 50 true high MPG category, with a prediction accuracy
+    of 0.8793.  
+-   The No Information Rate is 0.5, which means if we have no
+    information at all and predict all the MPG category to be low (or
+    high), the prediction accuracy will be 0.5.  
+-   The p-value is approximately 0, showing that the fitted model is
+    significantly better than the one generates no information rate.  
+-   Sensitivity is 0.8621, which is the rate of predicting MPG category
+    as high given the true value is high. Specificity is 0.8966, which
+    is the rate of predicting MPG category as low given the true value
+    is low.  
+-   Positive predictive value is 0.8929, which is the rate of a true
+    high value given the predicted value is high. Negative predictive
+    value is 0.8929, which is the rate of a true low value given the
+    predicted value is low.  
+-   Kappa is 0.7586, which means the agreement of observations and
+    predictions is relatively high.
+
+## MARS

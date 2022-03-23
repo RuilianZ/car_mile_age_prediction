@@ -158,6 +158,51 @@ Also, `cylinders8` is highly correlated with above numeric predictors.
 ## Logistic Regression
 
 ```{r}
+set.seed(1115)
+
+# check for the response variable level
+contrasts(auto$mpg_cat)
+
+# fit glm model
+glm_fit = glm(
+  mpg_cat ~ .,
+  data = auto,
+  subset = index_train,
+  family = binomial(link = "logit"))
+
+summary(glm_fit)
+```
+
+From the summary above, we can see that for the logistic regression model, `weight` and `originEuropean` are **statistically significant predictors** under 0.05 significance level, and `weight` is significant under 0.01 significance level.  
+
+```{r}
+# test model performance
+test_pred_prob = predict(
+  glm_fit,
+  newdata = test,
+  type = "response") # get predicted probabilities
+
+test_pred = rep("low", length(test_pred_prob))
+
+# use a simple classifier with a cut-off of 0.5
+test_pred[test_pred_prob>0.5] = "high"
+
+confusionMatrix(data = as.factor(test_pred),
+                reference = test$mpg_cat,
+                positive = "high")
+```
+
+* As the confusion matrix shows above, there are 52 true low MPG category and 50 true high MPG category, with a prediction accuracy of 0.8793.  
+* The No Information Rate is 0.5, which means if we have no information at all and predict all the MPG category to be low (or high), the prediction accuracy will be 0.5.  
+* The p-value is approximately 0, showing that the fitted model is significantly better than the one generates no information rate.  
+* Sensitivity is 0.8621, which is the rate of predicting MPG category as high given the true value is high. Specificity is 0.8966, which is the rate of predicting MPG category as low given the true value is low.  
+* Positive predictive value is 0.8929, which is the rate of a true high value given the predicted value is high. Negative predictive value is 0.8929, which is the rate of a true low value given the predicted value is low.  
+* Kappa is 0.7586, which means the agreement of observations and predictions is relatively high.
+
+
+## MARS
+
+```{r}
 
 ```
 
