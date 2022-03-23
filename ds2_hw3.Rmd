@@ -151,3 +151,11 @@ model.matrix(mpg_cat~., data = auto)[ , -1] %>%
 
 We can see from the correlation plot that the numeric predictors `displacement`, `horsepower`, `weight`, `acceleration` are highly correlated, which may potentially result in some redundancy for model building.  
 Also, `cylinders8` is highly correlated with above numeric predictors.
+
+
+## Logistic Regression
+
+```{r}
+
+```
+
