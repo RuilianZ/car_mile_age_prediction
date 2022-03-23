@@ -153,6 +153,8 @@ predictors: `displacement`, `horsepower`, `weight`, `acceleration`, 3
 categorical predictors: `cylinders`, `year`, `origin`, and 1 categorical
 response variable: `mpg_cat`.
 
+For better illustration, all EDA plots are done using train data.
+
 ``` r
 # visualization for numeric variables using feature plot
 
@@ -162,8 +164,8 @@ trellis.par.set(theme1)
 
 # density plot
 featurePlot(
-  x = auto %>% dplyr::select(displacement, horsepower, weight,  acceleration), 
-  y = auto$mpg_cat, 
+  x = train %>% dplyr::select(displacement, horsepower, weight,  acceleration), 
+  y = train$mpg_cat, 
   scales = list(x = list(relation = "free"),
                 y = list(relation = "free")),
   plot = "density",
@@ -179,7 +181,7 @@ weight, higher acceleration, lower displacement and lower horsepower.
 ``` r
 # visualization for categorical variables using ggplot
 
-auto %>% 
+train %>% 
   dplyr::select(-displacement, -horsepower, -weight, -acceleration) %>% 
   melt(id.vars = "mpg_cat") %>% 
   ggplot(aes(x = value, fill = mpg_cat)) + 
@@ -205,7 +207,7 @@ cylinders, model year 1908s, and origin of European and Japanese.
 partimat(
   mpg_cat ~ displacement + horsepower + weight + acceleration,
   data = auto,
-  # subset = index_train, # if want to use test data
+  subset = index_train,
   method = "lda")
 ```
 
@@ -222,7 +224,7 @@ space).
 
 ``` r
 # correlation plot for all data
-model.matrix(mpg_cat~., data = auto)[ , -1] %>% 
+model.matrix(mpg_cat~., data = train)[ , -1] %>% 
   cor(use = "pairwise.complete.obs") %>% 
   ggcorrplot(type = "full", lab = TRUE, lab_size = 1)
 ```
@@ -234,3 +236,5 @@ We can see from the correlation plot that the numeric predictors
 correlated, which may potentially result in some redundancy for model
 building.  
 Also, `cylinders8` is highly correlated with above numeric predictors.
+
+## Logistic Regression

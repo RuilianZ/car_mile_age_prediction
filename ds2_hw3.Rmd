@@ -79,7 +79,7 @@ head(train)
 
 ## Exploratory Data Analysis
 
-Produce some graphical or numerical summaries of the data.
+Produce some graphical or numerical summaries of the data.  
 
 ```{r}
 dim(auto)
@@ -91,6 +91,8 @@ skimr::skim(auto)
 
 There are 392 rows and 8 columns in the full data, including 4 numeric predictors: `displacement`, `horsepower`, `weight`, `acceleration`, 3 categorical predictors: `cylinders`, `year`, `origin`, and 1 categorical response variable: `mpg_cat`.  
 
+For better illustration, all EDA plots are done using train data.
+
 ```{r}
 # visualization for numeric variables using feature plot
 
@@ -100,8 +102,8 @@ trellis.par.set(theme1)
 
 # density plot
 featurePlot(
-  x = auto %>% dplyr::select(displacement, horsepower, weight,  acceleration), 
-  y = auto$mpg_cat, 
+  x = train %>% dplyr::select(displacement, horsepower, weight,  acceleration), 
+  y = train$mpg_cat, 
   scales = list(x = list(relation = "free"),
                 y = list(relation = "free")),
   plot = "density",
@@ -114,7 +116,7 @@ The feature plot shows that higher MPG category is associated with lower weight,
 ```{r}
 # visualization for categorical variables using ggplot
 
-auto %>% 
+train %>% 
   dplyr::select(-displacement, -horsepower, -weight, -acceleration) %>% 
   melt(id.vars = "mpg_cat") %>% 
   ggplot(aes(x = value, fill = mpg_cat)) + 
@@ -134,7 +136,7 @@ This plot shows that higher MPG category mainly lies in cars with 5 or 6 cylinde
 partimat(
   mpg_cat ~ displacement + horsepower + weight + acceleration,
   data = auto,
-  # subset = index_train, # if want to use test data
+  subset = index_train,
   method = "lda")
 ```
 
@@ -144,7 +146,7 @@ Although in LDA we use all the predictors rather than just the combination of tw
 
 ```{r}
 # correlation plot for all data
-model.matrix(mpg_cat~., data = auto)[ , -1] %>% 
+model.matrix(mpg_cat~., data = train)[ , -1] %>% 
   cor(use = "pairwise.complete.obs") %>% 
   ggcorrplot(type = "full", lab = TRUE, lab_size = 1)
 ```
