@@ -268,6 +268,8 @@ lda_fit$scaling
 
 ## Model comparison
 
+### ROC and AUC
+
 ```{r}
 glm_pred = predict(
   glm_fit, 
@@ -283,8 +285,88 @@ lda_pred = predict(
   lda_fit, 
   newdata = auto[-index_train,])$posterior[,2]
 
-glm_roc <- roc(auto$mpg_cat[-index_train], glm_pred)
-mars_roc <- roc(auto$mpg_cat[-index_train], mars_pred)
-lda_roc <- roc(auto$mpg_cat[-index_train], lda_pred)
+# ROC
+glm_roc = roc(auto$mpg_cat[-index_train], glm_pred)
+mars_roc = roc(auto$mpg_cat[-index_train], mars_pred)
+lda_roc = roc(auto$mpg_cat[-index_train], lda_pred)
+
+# AUC
+auc = c(glm_roc$auc[1], mars_roc$auc[1], lda_roc$auc[1])
+
+model_names = c("glm","mars","lda")
+
+# plot ROC curve
+dev.off() # to fix "invalid graphics state" error in ggroc
+
+ggroc(
+  list(glm_roc, mars_roc, lda_roc), 
+  legacy.axes = TRUE) + 
+  scale_color_discrete(
+    labels = paste0(
+      model_names, 
+      " (", round(auc, 3),")"),
+    name = "Models (AUC)") +
+  geom_abline(intercept = 0, slope = 1, color = "grey")
 ```
 
+The LDA model or logistic regression model is preferred, since they have higher AUC than MARS model.  
+
+```{r}
+set.seed(1115)
+
+# refit glm and lda models using caret to incorporate cross-validation
+glm_caret = 
+  train(mpg_cat~.,
+        data = auto,
+        method = "glm",
+        metric = "ROC",
+        trControl = ctrl)
+
+lda_caret = 
+  train(mpg_cat~.,
+        data = auto,
+        method = "lda",
+        metric = "ROC",
+        trControl = ctrl)
+
+res = resamples(
+  list(Logistic_Regression = glm_caret,
+       MARS = mars_fit,
+       LDA = lda_caret),
+  times = 100)
+
+summary(res)
+
+# plot ROC
+bwplot(res, metric = "ROC")
+```
+
+From the plot above, with cross-validation, the LDA model is preferred since it has the highest ROC.
+
+
+### Misclassfication error rate
+
+```{r}
+# function of calculating misclassfication error rate
+error_rate = function(model_name, pred_prob, cutoff){
+  pred.label = rep("low", length(pred_prob))
+  pred.label[pred_prob > cutoff] = "high"
+  confusionMatrix = 
+       table(
+       tibble(pred = pred.label,
+              reference = auto$mpg_cat[-index_train]))
+  error = (confusionMatrix['high','low'] + confusionMatrix['low','high'])/length(pred_prob)
+  print(error)
+}
+```
+
+```{r}
+# when cut-off is 0.5
+error_rate('Logistic Regression', glm_pred, 0.5)
+error_rate('MARS', mars_pred, 0.5)
+error_rate('LDA', lda_pred, 0.5)
+```
+
+* Using a simple classifier with a cut-off of 0.5, Logistic Regression model is the best, since it has the lowest misclassification rate.  
+* One can also use the function to explore other situation with different cut-off or models.  
+* The higher the cut-off is, the more data will be classified to "lower" class.

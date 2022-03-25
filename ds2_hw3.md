@@ -511,6 +511,8 @@ lda_fit$scaling
 
 ## Model comparison
 
+### ROC and AUC
+
 ``` r
 glm_pred = predict(
   glm_fit, 
@@ -526,7 +528,138 @@ lda_pred = predict(
   lda_fit, 
   newdata = auto[-index_train,])$posterior[,2]
 
-glm_roc <- roc(auto$mpg_cat[-index_train], glm_pred)
-mars_roc <- roc(auto$mpg_cat[-index_train], mars_pred)
-lda_roc <- roc(auto$mpg_cat[-index_train], lda_pred)
+# ROC
+glm_roc = roc(auto$mpg_cat[-index_train], glm_pred)
+mars_roc = roc(auto$mpg_cat[-index_train], mars_pred)
+lda_roc = roc(auto$mpg_cat[-index_train], lda_pred)
+
+# AUC
+auc = c(glm_roc$auc[1], mars_roc$auc[1], lda_roc$auc[1])
+
+model_names = c("glm","mars","lda")
+
+# plot ROC curve
+dev.off() # to fix "invalid graphics state" error in ggroc
 ```
+
+    ## null device 
+    ##           1
+
+``` r
+ggroc(
+  list(glm_roc, mars_roc, lda_roc), 
+  legacy.axes = TRUE) + 
+  scale_color_discrete(
+    labels = paste0(
+      model_names, 
+      " (", round(auc, 3),")"),
+    name = "Models (AUC)") +
+  geom_abline(intercept = 0, slope = 1, color = "grey")
+```
+
+The LDA model or logistic regression model is preferred, since they have
+higher AUC than MARS model.
+
+``` r
+set.seed(1115)
+
+# refit glm and lda models using caret to incorporate cross-validation
+glm_caret = 
+  train(mpg_cat~.,
+        data = auto,
+        method = "glm",
+        metric = "ROC",
+        trControl = ctrl)
+
+lda_caret = 
+  train(mpg_cat~.,
+        data = auto,
+        method = "lda",
+        metric = "ROC",
+        trControl = ctrl)
+
+res = resamples(
+  list(Logistic_Regression = glm_caret,
+       MARS = mars_fit,
+       LDA = lda_caret),
+  times = 100)
+
+summary(res)
+```
+
+    ## 
+    ## Call:
+    ## summary.resamples(object = res)
+    ## 
+    ## Models: Logistic_Regression, MARS, LDA 
+    ## Number of resamples: 50 
+    ## 
+    ## ROC 
+    ##                          Min.   1st Qu.    Median      Mean   3rd Qu. Max. NA's
+    ## Logistic_Regression 0.8947368 0.9447368 0.9679605 0.9642922 0.9868750    1    0
+    ## MARS                0.8418367 0.9323829 0.9682104 0.9582113 0.9966641    1    0
+    ## LDA                 0.9105263 0.9578947 0.9776316 0.9721114 0.9888158    1    0
+    ## 
+    ## Sens 
+    ##                          Min.   1st Qu.    Median      Mean   3rd Qu. Max. NA's
+    ## Logistic_Regression 0.7894737 0.8947368 0.9000000 0.9131053 0.9500000    1    0
+    ## MARS                0.7142857 0.8571429 0.9285714 0.8971429 0.9285714    1    0
+    ## LDA                 0.6842105 0.8421053 0.8947368 0.8922105 0.9500000    1    0
+    ## 
+    ## Spec 
+    ##                          Min.   1st Qu.    Median      Mean 3rd Qu. Max. NA's
+    ## Logistic_Regression 0.7500000 0.8947368 0.9000000 0.9202632    0.95    1    0
+    ## MARS                0.7142857 0.8571429 0.9285714 0.9304396    1.00    1    0
+    ## LDA                 0.8000000 0.8947368 0.9000000 0.9195789    0.95    1    0
+
+``` r
+# plot ROC
+bwplot(res, metric = "ROC")
+```
+
+<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-13-1.png" width="95%" style="display: block; margin: auto;" />
+
+From the plot above, with cross-validation, the LDA model is preferred
+since it has the highest ROC.
+
+### Misclassfication error rate
+
+``` r
+# function of calculating misclassfication error rate
+error_rate = function(model_name, pred_prob, cutoff){
+  pred.label = rep("low", length(pred_prob))
+  pred.label[pred_prob > cutoff] = "high"
+  confusionMatrix = 
+       table(
+       tibble(pred = pred.label,
+              reference = auto$mpg_cat[-index_train]))
+  error = (confusionMatrix['high','low'] + confusionMatrix['low','high'])/length(pred_prob)
+  print(error)
+}
+```
+
+``` r
+# when cut-off is 0.5
+error_rate('Logistic Regression', glm_pred, 0.5)
+```
+
+    ## [1] 0.1206897
+
+``` r
+error_rate('MARS', mars_pred, 0.5)
+```
+
+    ## [1] 0.1293103
+
+``` r
+error_rate('LDA', lda_pred, 0.5)
+```
+
+    ## [1] 0.137931
+
+-   Using a simple classifier with a cut-off of 0.5, Logistic Regression
+    model is the best, since it has the lowest misclassification rate.  
+-   One can also use the function to explore other situation with
+    different cut-off or models.  
+-   The higher the cut-off is, the more data will be classified to
+    “lower” class.
