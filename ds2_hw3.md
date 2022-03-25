@@ -162,7 +162,7 @@ featurePlot(
   auto.key = list(columns = 2))
 ```
 
-<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
+<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-4-1.png" width="95%" style="display: block; margin: auto;" />
 
 The feature plot shows that higher MPG category is associated with lower
 weight, higher acceleration, lower displacement and lower horsepower.
@@ -183,13 +183,13 @@ train %>%
   facet_wrap(~variable, scales = "free", nrow = 2)
 ```
 
-<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-5-1.png" style="display: block; margin: auto;" />
+<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-5-1.png" width="95%" style="display: block; margin: auto;" />
 
 This plot shows that higher MPG category mainly lies in cars with 5 or 6
 cylinders, model year 1908s, and origin of European and Japanese.
 
 ``` r
-# LAD partition plot for numeric variables
+# LDA partition plot for numeric variables
 partimat(
   mpg_cat ~ displacement + horsepower + weight + acceleration,
   data = auto,
@@ -197,7 +197,7 @@ partimat(
   method = "lda")
 ```
 
-<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-6-1.png" width="95%" style="display: block; margin: auto;" />
 
 The LDA partition plot is based on every combination of two numeric
 variables, which gives the decision boundrary of making
@@ -215,7 +215,7 @@ model.matrix(mpg_cat~., data = train)[ , -1] %>%
   ggcorrplot(type = "full", lab = TRUE, lab_size = 1)
 ```
 
-<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
+<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-7-1.png" width="95%" style="display: block; margin: auto;" />
 
 We can see from the correlation plot that the numeric predictors
 `displacement`, `horsepower`, `weight`, `acceleration` are highly
@@ -372,7 +372,7 @@ ctrl = trainControl(
   repeats = 5,
   classProbs = TRUE)
 
-model_mars = train(
+mars_fit = train(
   x = train[ , 1:7],
   y = train$mpg_cat,
   method = "earth",
@@ -381,7 +381,7 @@ model_mars = train(
   metric = "ROC",
   trControl = ctrl)
 
-summary(model_mars)
+summary(mars_fit)
 ```
 
     ## Call: earth(x=tbl_df[276,7], y=factor.object, keepxy=TRUE,
@@ -407,20 +407,20 @@ summary(model_mars)
     ## Earth GCV 0.05760174    RSS 14.6561    GRSq 0.7712596    RSq 0.7875928
 
 ``` r
-plot(model_mars)
+plot(mars_fit)
 ```
 
-<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
+<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-10-1.png" width="95%" style="display: block; margin: auto;" />
 
 ``` r
-model_mars$bestTune
+mars_fit$bestTune
 ```
 
     ##   nprune degree
     ## 5      6      1
 
 ``` r
-coef(model_mars$finalModel)
+coef(mars_fit$finalModel)
 ```
 
     ##         (Intercept)          cylinders4              year73 h(displacement-163) 
@@ -429,9 +429,82 @@ coef(model_mars$finalModel)
     ##           0.3938448          -0.5229625
 
 ``` r
-vip(model_mars$finalModel)
+# importance plot
+vip(mars_fit$finalModel)
 ```
 
-<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-10-2.png" style="display: block; margin: auto;" />
+<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-10-2.png" width="95%" style="display: block; margin: auto;" />
 
-From the plot above, there are 3 important predictors:
+-   From ‘earth’, the best tune metrics are nprune = 6, degree = 1,
+    which is consistent with the ROC curve in the plot.  
+-   There are 6 terms in the final model: intercept, `cylinders4`,
+    `year73`, `h(displacement-163)`, `h(displacement-200)`,
+    `h(displacement-183)`.  
+-   From the importance plot above, there are 4 important predictors:
+    `year73`, `cylinders4`, `displacement`.
+
+## LDA
+
+``` r
+lda_fit = lda(
+  mpg_cat~.,
+  data = auto,
+  subset = index_train)
+
+lda_pred = predict(lda_fit, newdata = auto[-index_train, ])
+
+# probabilities of reponse level
+head(lda_pred$posterior)
+```
+
+    ##         low         high
+    ## 1 0.9995071 4.929342e-04
+    ## 2 0.9997244 2.755540e-04
+    ## 3 0.9993182 6.818449e-04
+    ## 4 0.9992016 7.983627e-04
+    ## 5 0.9999345 6.547503e-05
+    ## 6 0.9999655 3.447012e-05
+
+``` r
+# plot linear discriminants
+plot(lda_fit, col = as.numeric(auto$mpg_cat), abbrev = TRUE)
+```
+
+<img src="ds2_hw3_files/figure-gfm/unnamed-chunk-11-1.png" width="95%" style="display: block; margin: auto;" />
+
+``` r
+# scaling matrix
+lda_fit$scaling
+```
+
+    ##                          LD1
+    ## cylinders4      3.6969763304
+    ## cylinders5      2.7920775239
+    ## cylinders6      0.6697421939
+    ## cylinders8      1.2283252963
+    ## year71         -0.0340684304
+    ## year72         -0.4236537995
+    ## year73         -0.8140696186
+    ## year74          0.3655853633
+    ## year75          0.3008403033
+    ## year76         -0.1917031563
+    ## year77          0.4415032169
+    ## year78         -0.0868919263
+    ## year79          0.7396673704
+    ## year80          0.9700822730
+    ## year81          1.3395345249
+    ## year82          1.1687945187
+    ## originEuropean  0.4169519838
+    ## originJapanese  0.2417803278
+    ## displacement   -0.0018384177
+    ## horsepower      0.0006593578
+    ## weight         -0.0005835299
+    ## acceleration   -0.0470062239
+
+-   LDA has no tuning parameters, it classifies the data by nearest
+    centroid. Since there are 2 levels of the response variable, we have
+    k = 2 - 1 = 1 linear discriminants.  
+-   The linear discriminant plot shows the histogram of transformed X
+    (predictors) for both levels. From the plot, when X is lower, data
+    are tend to be classified in the high `mpg_cat` group, and vice
+    versa.

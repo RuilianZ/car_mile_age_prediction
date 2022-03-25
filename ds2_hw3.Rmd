@@ -6,8 +6,6 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
 library(tidyverse)
 library(caret) # Classification And REgression Training
 library(glmnet) # GLM models
@@ -20,7 +18,13 @@ library(AppliedPredictiveModeling) # transparent theme
 library(reshape2) # melt() EDA visualization
 library(ggcorrplot) # correlation plot
 
-knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.align = "center")
+knitr::opts_chunk$set(
+  warning = FALSE, 
+  message = FALSE, 
+  fig.align = "center",
+  fig.width = 6,
+  fig.asp = .7,
+  out.width = "95%")
 
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 ```
@@ -133,7 +137,7 @@ train %>%
 This plot shows that higher MPG category mainly lies in cars with 5 or 6 cylinders, model year 1908s, and origin of European and Japanese.  
 
 ```{r}
-# LAD partition plot for numeric variables
+# LDA partition plot for numeric variables
 partimat(
   mpg_cat ~ displacement + horsepower + weight + acceleration,
   data = auto,
@@ -212,7 +216,7 @@ ctrl = trainControl(
   repeats = 5,
   classProbs = TRUE)
 
-model_mars = train(
+mars_fit = train(
   x = train[ , 1:7],
   y = train$mpg_cat,
   method = "earth",
@@ -221,15 +225,44 @@ model_mars = train(
   metric = "ROC",
   trControl = ctrl)
 
-summary(model_mars)
+summary(mars_fit)
 
-plot(model_mars)
+plot(mars_fit)
 
-model_mars$bestTune
+mars_fit$bestTune
 
-coef(model_mars$finalModel)
+coef(mars_fit$finalModel)
 
-vip(model_mars$finalModel)
+# importance plot
+vip(mars_fit$finalModel)
 ```
 
-From the plot above, there are 3 important predictors: 
+* From 'earth', the best tune metrics are nprune = 6, degree = 1, which is consistent with the ROC curve in the plot.  
+* There are 6 terms in the final model: intercept, `cylinders4`, `year73`, `h(displacement-163)`, `h(displacement-200)`,  `h(displacement-183)`.  
+* From the importance plot above, there are 4 important predictors: `year73`, `cylinders4`, `displacement`.
+
+
+## LDA
+
+```{r}
+lda_fit = lda(
+  mpg_cat~.,
+  data = auto,
+  subset = index_train)
+
+lda_pred = predict(lda_fit, newdata = auto[-index_train, ])
+
+# probabilities of reponse level
+head(lda_pred$posterior)
+
+# plot linear discriminants
+plot(lda_fit, col = as.numeric(auto$mpg_cat), abbrev = TRUE)
+
+# scaling matrix
+lda_fit$scaling
+```
+
+* LDA has no tuning parameters, it classifies the data by nearest centroid. Since there are 2 levels of the response variable, we have k = 2 - 1 = 1 linear discriminants.  
+* The linear discriminant plot shows the histogram of  transformed X (predictors) for both levels. From the plot, when X is lower, data are tend to be classified in the high `mpg_cat` group, and vice versa.  
+
+
