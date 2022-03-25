@@ -266,3 +266,25 @@ lda_fit$scaling
 * The linear discriminant plot shows the histogram of  transformed X (predictors) for both levels. From the plot, when X is lower, data are tend to be classified in the high `mpg_cat` group, and vice versa.  
 
 
+## Model comparison
+
+```{r}
+glm_pred = predict(
+  glm_fit, 
+  newdata = auto[-index_train, ], 
+  type = "response")
+
+mars_pred = predict(
+  mars_fit, 
+  newdata = auto[-index_train, ], 
+  type = "prob")[,2]
+
+lda_pred = predict(
+  lda_fit, 
+  newdata = auto[-index_train,])$posterior[,2]
+
+glm_roc <- roc(auto$mpg_cat[-index_train], glm_pred)
+mars_roc <- roc(auto$mpg_cat[-index_train], mars_pred)
+lda_roc <- roc(auto$mpg_cat[-index_train], lda_pred)
+```
+
