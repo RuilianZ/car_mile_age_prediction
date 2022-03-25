@@ -20,7 +20,8 @@ library(AppliedPredictiveModeling) # transparent theme
 library(reshape2) # melt() EDA visualization
 library(ggcorrplot) # correlation plot
 
-# set theme
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, fig.align = "center")
+
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 ```
 
@@ -211,21 +212,12 @@ ctrl = trainControl(
   repeats = 5,
   classProbs = TRUE)
 
-model.mars = train(
-  x = auto[index_train, 1:7],
-  y = auto$mpg_cat[index_train],
-  method = "earth",
-  tuneGrid = expand.grid(degree = 1:3,
-                        nprune = 2:25),
-  metric = "ROC",
-  trControl = ctrl)
-
 model_mars = train(
   x = train[ , 1:7],
   y = train$mpg_cat,
   method = "earth",
   tuneGrid = expand.grid(degree = 1:4,
-                         nprune = 2:20),
+                         nprune = 2:18),
   metric = "ROC",
   trControl = ctrl)
 
@@ -240,3 +232,4 @@ coef(model_mars$finalModel)
 vip(model_mars$finalModel)
 ```
 
+From the plot above, there are 3 important predictors: 
