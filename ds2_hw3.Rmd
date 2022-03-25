@@ -200,9 +200,43 @@ confusionMatrix(data = as.factor(test_pred),
 * Kappa is 0.7586, which means the agreement of observations and predictions is relatively high.
 
 
-## MARS
+## MARS (multivariate adaptive regression spline) model
 
 ```{r}
+set.seed(1115)
 
+ctrl = trainControl(
+  method = "repeatedcv",
+  summaryFunction = twoClassSummary,
+  repeats = 5,
+  classProbs = TRUE)
+
+model.mars = train(
+  x = auto[index_train, 1:7],
+  y = auto$mpg_cat[index_train],
+  method = "earth",
+  tuneGrid = expand.grid(degree = 1:3,
+                        nprune = 2:25),
+  metric = "ROC",
+  trControl = ctrl)
+
+model_mars = train(
+  x = train[ , 1:7],
+  y = train$mpg_cat,
+  method = "earth",
+  tuneGrid = expand.grid(degree = 1:4,
+                         nprune = 2:20),
+  metric = "ROC",
+  trControl = ctrl)
+
+summary(model_mars)
+
+plot(model_mars)
+
+model_mars$bestTune
+
+coef(model_mars$finalModel)
+
+vip(model_mars$finalModel)
 ```
 
