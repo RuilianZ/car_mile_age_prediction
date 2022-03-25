@@ -2,7 +2,11 @@
 title: "Homework 3 for Data Science II"
 author: "Roxy Zhang"
 date: "3/22/2022"
-output: github_document
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    toc: yes
+    toc_depth: 2
 ---
 
 ```{r setup, include=FALSE}
